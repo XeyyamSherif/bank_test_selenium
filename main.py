@@ -1,109 +1,96 @@
 from selenium import webdriver
-import time
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.select import Select
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select
 
 PATH = "chromedriver"
 driver = webdriver.Chrome()
 
 
-def select_button(button_str, type_button):
-    if type_button == 'text':
-        return driver.find_element(By.XPATH, f"//button[contains(text(), '{button_str}')]")
-    elif type_button == 'list':
-        return driver.find_elements(By.XPATH, f"//button[contains(text(), '{button_str}')]")
+def find_element(selector, value, multiple=False):
+    if not multiple:
+        return WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((selector, value))
+        )
     else:
-        return driver.find_element(By.XPATH, f"//input[@placeholder='{button_str}']")
+        return WebDriverWait(driver, 10).until(
+            EC.presence_of_all_elements_located((selector, value))
+        )
+
+
+def click_element(element):
+    element.click()
+
+
+def input_text(element, text):
+    element.send_keys(text)
+
+
+def select_option_by_text(select_element, option_text):
+    select = Select(select_element)
+    select.select_by_visible_text(option_text)
+
+
+def add_customer(first_name, last_name, post_code):
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Bank Manager Login')]"))
+    driver.switch_to.window(driver.window_handles[0])
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Add Customer')]"))
+    input_text(find_element(By.XPATH, "//input[@placeholder='First Name']"), first_name)
+    input_text(find_element(By.XPATH, "//input[@placeholder='Last Name']"), last_name)
+    input_text(find_element(By.XPATH, "//input[@placeholder='Post Code']"), post_code)
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Add Customer')]"))
+    alert = driver.switch_to.alert
+    alert.accept()
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Home')]"))
+
+
+def open_account(customer_name, currency):
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Bank Manager Login')]"))
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Open Account')]"))
+    select_option_by_text(find_element(By.ID, "userSelect"), customer_name)
+    select_option_by_text(find_element(By.ID, "currency"), currency)
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Process')]"))
+    alert = driver.switch_to.alert
+    alert.accept()
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Home')]"))
+
+
+def login_and_transact(customer_name, deposit_amount, withdraw_amount):
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Customer Login')]"))
+    driver.switch_to.window(driver.window_handles[0])
+    select_option_by_text(find_element(By.ID, "userSelect"), customer_name)
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Login')]"))
+    
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Deposit')]"))
+    input_text(find_element(By.XPATH, "//input[@placeholder='amount']"), deposit_amount)
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Deposit')]"))
+
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Withdrawl')]"))
+    input_text(find_element(By.XPATH, "//input[@placeholder='amount']"), withdraw_amount)
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Withdraw')]"))
+
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Logout')]"))
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Home')]"))
+
+
+def delete_customer(search_text):
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Bank Manager Login')]"))
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Customers')]"))
+    input_text(find_element(By.XPATH, "//input[@placeholder='Search Customer']"), search_text)
+    click_element(find_element(By.XPATH, "//button[contains(text(), 'Delete')]"))
 
 
 def main():
     driver.maximize_window()
     driver.get("https://www.globalsqa.com/angularJs-protractor/BankingProject/#/login")
-    time.sleep(1)
 
-    ################     Yeni user yaratmaq
-    select_button('Bank Manager Login', "text").click()
-
-    time.sleep(1)
-    driver.switch_to.window(driver.window_handles[0])
-
-    select_button("Add Customer", "list")[0].click()
-
-    time.sleep(1)
-
-    select_button('First Name', 'submit').send_keys("Emin")
-    select_button('Last Name', 'submit').send_keys("Abdullayev")
-    select_button('Post Code', 'submit').send_keys("AZ1018")
-
-    select_button("Add Customer", "list")[1].click()
-    time.sleep(1)
-
-    alert = driver.switch_to.alert
-    alert.accept()
-
-    select_button('Home', "text").click()
-    time.sleep(1)
-
-    #############     Yeni yaradilmis user ucun process aparilmasi
-    select_button('Bank Manager Login', "text").click()
-    time.sleep(1)
-    select_button('Open Account', "text").click()
-    time.sleep(1)
-
-    dropdown_users = driver.find_element(By.ID, "userSelect")
-    dropdown_users.click()
-    Select(dropdown_users).select_by_visible_text("Emin Abdullayev")
-
-    dropdown_users = driver.find_element(By.ID, "currency")
-    dropdown_users.click()
-    Select(dropdown_users).select_by_visible_text("Dollar")
-
-    select_button('Process', "text").click()
-
-    time.sleep(1)
-    alert = driver.switch_to.alert
-    alert.accept()
-
-    select_button('Home', "text").click()
-    time.sleep(1)
-
-    ######### User login deposit withdraw
-    select_button('Customer Login', "text").click()
-    time.sleep(1)
-    driver.switch_to.window(driver.window_handles[0])
-    dropdown_users = driver.find_element(By.ID, "userSelect")
-    dropdown_users.click()
-    Select(dropdown_users).select_by_visible_text("Emin Abdullayev")
-
-    select_button('Login', "text").click()
-    time.sleep(1)
-    select_button('Deposit', "list")[0].click()
-    time.sleep(1)
-    select_button('amount', 'submit').send_keys(500)
-    time.sleep(1)
-    select_button('Deposit', "list")[1].click()
-
-    select_button('Withdrawl', "list")[0].click()
-    time.sleep(1)
-    select_button('amount', 'submit').send_keys(200)
-    time.sleep(1)
-    select_button('Withdraw', "list")[1].click()
-    select_button('Logout', "text").click()
-    time.sleep(1)
-    select_button('Home', "text").click()
-    time.sleep(1)
-
-    ########## Delete user
-    select_button('Bank Manager Login', "text").click()
-    time.sleep(1)
-    select_button('Customers', "text").click()
-    time.sleep(1)
-
-    select_button('Search Customer', 'submit').send_keys("Emin")
-    time.sleep(1)
-    select_button('Delete', "text").click()
+    add_customer("Emin", "Abdullayev", "AZ1018")
+    open_account("Emin Abdullayev", "Dollar")
+    login_and_transact("Emin Abdullayev", "500", "200")
+    delete_customer("Emin")
 
 
 if __name__ == "__main__":
     main()
-    time.sleep(2131)
+    driver.quit()
